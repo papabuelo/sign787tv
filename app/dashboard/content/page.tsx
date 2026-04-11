@@ -48,7 +48,7 @@ const typeBadgeStyle: Record<string, React.CSSProperties> = {
 };
 
 // ─── Upload Modal ─────────────────────────────────────
-function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+function UploadModal({ onClose, onDone, devices }: { onClose: () => void; onDone: () => void; devices: any[] }) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [dragging, setDragging] = useState(false);
   const [webUrl, setWebUrl] = useState('');
@@ -179,8 +179,8 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
             style={{ width: '100%', appearance: 'auto' }}
           >
             <option value="">Carpeta General (uploads/)</option>
-            {allDevices.map(d => (
-              <option key={d.id} value={d.id}>{d.name} ({d.location})</option>
+            {devices.map(d => (
+              <option key={d.id} value={d.id}>{d.name} {d.location ? `(${d.location})` : ''}</option>
             ))}
           </select>
         </div>
@@ -302,8 +302,21 @@ export default function ContentPage() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [folderFilter, setFolderFilter] = useState<string>('all');
+  const [devices, setDevices] = useState<typeof allDevices>([]);
 
   const supabase = createClient();
+
+  useEffect(() => {
+    async function loadDevices() {
+      const { data, error } = await supabase.from('devices').select('id, name, location').order('name');
+      if (error || !data || data.length === 0) {
+        setDevices(allDevices); // fallback a datos estáticos si falla o está vacío
+      } else {
+        setDevices(data as any);
+      }
+    }
+    loadDevices();
+  }, []);
 
   async function loadContent() {
     setLoading(true);
@@ -347,6 +360,7 @@ export default function ContentPage() {
         <UploadModal
           onClose={() => setShowUpload(false)}
           onDone={() => { loadContent(); setShowUpload(false); }}
+          devices={devices}
         />
       )}
 
@@ -393,7 +407,7 @@ export default function ContentPage() {
             >
               <option value="all">Todas las carpetas</option>
               <option value="general">Carpeta General</option>
-              {allDevices.map(d => (
+              {devices.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>

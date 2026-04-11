@@ -5,7 +5,8 @@ import {
   Monitor, Wifi, WifiOff, Plus, Filter, Download,
   MoreVertical, RefreshCw, Power, Send, Eye, MapPin, Cpu, HardDrive
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 export type DeviceStatus = 'online' | 'offline' | 'warning';
 
@@ -43,15 +44,43 @@ const statusLabels: Record<DeviceStatus, string> = {
 export default function DevicesPage() {
   const [filter, setFilter] = useState<'all' | DeviceStatus>('all');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = filter === 'all' ? allDevices : allDevices.filter(d => d.status === filter);
-  const onlineCount = allDevices.filter(d => d.status === 'online').length;
-  const offlineCount = allDevices.filter(d => d.status === 'offline').length;
-  const warningCount = allDevices.filter(d => d.status === 'warning').length;
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadDevices() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .order('name', { ascending: true });
+        
+      if (error) {
+        console.error('Error cargando dispositivos:', error);
+        // Fallback a los datos estáticos temporalmente si falla
+        setDevices(allDevices);
+      } else if (data && data.length > 0) {
+        setDevices(data as Device[]);
+      } else {
+        // Fallback a los datos estáticos si está vacío
+        setDevices(allDevices);
+      }
+      setLoading(false);
+    }
+    
+    loadDevices();
+  }, []);
+
+  const filtered = filter === 'all' ? devices : devices.filter(d => d.status === filter);
+  const onlineCount = devices.filter(d => d.status === 'online').length;
+  const offlineCount = devices.filter(d => d.status === 'offline').length;
+  const warningCount = devices.filter(d => d.status === 'warning').length;
 
   return (
     <div>
-      <Topbar title="Dispositivos" subtitle={`${allDevices.length} dispositivos registrados · ${onlineCount} online`} />
+      <Topbar title="Dispositivos" subtitle={loading ? 'Cargando dispositivos...' : `${devices.length} dispositivos registrados · ${onlineCount} online`} />
 
       <div style={{ padding: '28px 32px' }}>
 
@@ -59,7 +88,7 @@ export default function DevicesPage() {
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' }}>
             {([
-              { key: 'all', label: `Todos (${allDevices.length})` },
+              { key: 'all', label: `Todos (${devices.length})` },
               { key: 'online', label: `Online (${onlineCount})` },
               { key: 'warning', label: `Alerta (${warningCount})` },
               { key: 'offline', label: `Offline (${offlineCount})` },
@@ -193,7 +222,7 @@ export default function DevicesPage() {
 
         {/* Footer count */}
         <p style={{ marginTop: '16px', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
-          Mostrando {filtered.length} de {allDevices.length} dispositivos
+          Mostrando {filtered.length} de {devices.length} dispositivos
         </p>
       </div>
     </div>
