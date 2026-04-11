@@ -406,8 +406,14 @@ export default function ContentPage() {
               const color = typeColors[item.type];
               return (
                 <div key={item.id} className="glass-card glass-card-hover" style={{ overflow: 'hidden', cursor: 'pointer' }}>
-                  <div style={{ height: '110px', background: `linear-gradient(135deg, ${color}18, ${color}06)`, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--border)' }}>
-                    <Icon size={36} color={color} style={{ opacity: 0.6 }} />
+                  <div style={{ height: '110px', background: `linear-gradient(135deg, ${color}18, ${color}06)`, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--border)', position: 'relative' }}>
+                    {item.type === 'image' && item.r2_url ? (
+                      <img src={item.r2_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : item.type === 'video' && item.r2_url ? (
+                      <video src={item.r2_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline preload="metadata" />
+                    ) : (
+                      <Icon size={36} color={color} style={{ opacity: 0.6 }} />
+                    )}
                   </div>
                   <div style={{ padding: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
