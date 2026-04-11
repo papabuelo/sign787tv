@@ -3,36 +3,30 @@
 import Topbar from '@/components/Topbar';
 import {
   Monitor, Wifi, WifiOff, Plus, Filter, Download,
-  MoreVertical, RefreshCw, Power, Send, Eye, MapPin, Cpu, HardDrive
+  MoreVertical, RefreshCw, Power, Send, Eye, MapPin, Cpu, HardDrive,
+  Layout, Settings, Building, User
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { allClients } from '@/types';
+import type { Device, DeviceStatus } from '@/types';
 
-export type DeviceStatus = 'online' | 'offline' | 'warning';
-
-export interface Device {
-  id: string;
-  name: string;
-  client: string;
-  location: string;
-  status: DeviceStatus;
-  layout: string;
-  uptime: string;
-  lastSeen: string;
-  ip: string;
-  storage: number;
-  version: string;
-}
-
+// Dispositivo de prueba funcional - se puede eliminar/modificar después
 export const allDevices: Device[] = [
-  { id: 'FS-001', name: 'TV-Entrada-Principal', client: 'Burger King Bayamón', location: 'Bayamón, PR', status: 'online', layout: 'Full Screen', uptime: '99.2%', lastSeen: 'Ahora', ip: '192.168.1.101', storage: 72, version: '2.4.1' },
-  { id: 'FS-002', name: 'TV-Caja-Registradora', client: 'Subway Plaza', location: 'Hato Rey, PR', status: 'online', layout: '4 Zonas', uptime: '97.8%', lastSeen: 'hace 1 min', ip: '10.0.0.45', storage: 48, version: '2.4.1' },
-  { id: 'FS-003', name: 'TV-Sala-Espera', client: 'Clínica Médica Norte', location: 'Arecibo, PR', status: 'offline', layout: '3 Paneles', uptime: '81.0%', lastSeen: 'hace 3h', ip: '—', storage: 91, version: '2.3.8' },
-  { id: 'FS-004', name: 'TV-Vitrina-Exterior', client: 'Walgreens Río Piedras', location: 'Río Piedras, PR', status: 'online', layout: '2-Split', uptime: '98.5%', lastSeen: 'Ahora', ip: '192.168.2.55', storage: 35, version: '2.4.1' },
-  { id: 'FS-005', name: 'TV-Lobby', client: 'Banco Popular Santurce', location: 'Santurce, PR', status: 'warning', layout: 'Full Screen', uptime: '92.1%', lastSeen: 'hace 8 min', ip: '172.16.0.12', storage: 65, version: '2.4.0' },
-  { id: 'FS-006', name: 'TV-Mostrador', client: 'Pizza Hut Caguas', location: 'Caguas, PR', status: 'online', layout: 'Full Screen', uptime: '99.7%', lastSeen: 'Ahora', ip: '192.168.5.88', storage: 22, version: '2.4.1' },
-  { id: 'FS-007', name: 'TV-Exterior-Norte', client: 'Walmart Carolina', location: 'Carolina, PR', status: 'online', layout: '2-Split', uptime: '96.4%', lastSeen: 'hace 2 min', ip: '10.5.0.201', storage: 55, version: '2.4.1' },
-  { id: 'FS-008', name: 'TV-Drive-Thru', client: 'McD Guaynabo', location: 'Guaynabo, PR', status: 'offline', layout: 'Full Screen', uptime: '78.3%', lastSeen: 'hace 6h', ip: '—', storage: 88, version: '2.3.5' },
+  { 
+    id: 'TEST-001', 
+    name: 'Dispositivo-Prueba-SIGN787', 
+    clientId: 'CLIENT-001',
+    client: 'Demo Client', 
+    location: 'Laboratorio, PR', 
+    status: 'online', 
+    layout: 'Full Screen', 
+    uptime: '100%', 
+    lastSeen: 'Ahora', 
+    ip: '192.168.1.100', 
+    storage: 15, 
+    version: '2.4.1' 
+  }
 ];
 
 const statusLabels: Record<DeviceStatus, string> = {
@@ -45,6 +39,7 @@ export default function DevicesPage() {
   const [filter, setFilter] = useState<'all' | DeviceStatus>('all');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedClient, setSelectedClient] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
@@ -52,19 +47,24 @@ export default function DevicesPage() {
   useEffect(() => {
     async function loadDevices() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('devices')
-        .select('*')
-        .order('name', { ascending: true });
-        
-      if (error) {
-        console.error('Error cargando dispositivos:', error);
-        // Fallback a los datos estáticos temporalmente si falla
-        setDevices(allDevices);
-      } else if (data && data.length > 0) {
-        setDevices(data as Device[]);
-      } else {
-        // Fallback a los datos estáticos si está vacío
+      try {
+        const { data, error } = await supabase
+          .from('devices')
+          .select('*')
+          .order('name', { ascending: true });
+          
+        if (error) {
+          console.error('Error cargando dispositivos:', error);
+          // Usar datos de prueba mientras tanto
+          setDevices(allDevices);
+        } else if (data && data.length > 0) {
+          setDevices(data as Device[]);
+        } else {
+          // Si no hay dispositivos en la base de datos, usar el de prueba
+          setDevices(allDevices);
+        }
+      } catch (err) {
+        console.error('Error conectando a Supabase:', err);
         setDevices(allDevices);
       }
       setLoading(false);
@@ -73,16 +73,85 @@ export default function DevicesPage() {
     loadDevices();
   }, []);
 
-  const filtered = filter === 'all' ? devices : devices.filter(d => d.status === filter);
+  const filtered = devices.filter(device => {
+    const clientMatch = selectedClient === 'all' || device.clientId === selectedClient;
+    const statusMatch = filter === 'all' || device.status === filter;
+    return clientMatch && statusMatch;
+  });
   const onlineCount = devices.filter(d => d.status === 'online').length;
   const offlineCount = devices.filter(d => d.status === 'offline').length;
   const warningCount = devices.filter(d => d.status === 'warning').length;
 
+  // Función para crear un dispositivo de prueba
+  const createTestDevice = () => {
+    const testDevice: Device = {
+      id: `TEST-${Date.now().toString().slice(-4)}`,
+      name: `Dispositivo-Prueba-${devices.length + 1}`,
+      clientId: 'CLIENT-001',
+      client: 'Cliente Demo',
+      location: 'Ubicación Demo',
+      status: 'online',
+      layout: 'Full Screen',
+      uptime: '100%',
+      lastSeen: 'Ahora',
+      ip: '192.168.1.200',
+      storage: Math.floor(Math.random() * 50) + 10,
+      version: '2.4.1'
+    };
+    
+    setDevices([...devices, testDevice]);
+  };
+
+  // Función para cambiar el layout de un dispositivo
+  const changeDeviceLayout = (deviceId: string, newLayout: string) => {
+    setDevices(devices.map(device => 
+      device.id === deviceId 
+        ? { ...device, layout: newLayout }
+        : device
+    ));
+  };
+
   return (
     <div>
-      <Topbar title="Dispositivos" subtitle={loading ? 'Cargando dispositivos...' : `${devices.length} dispositivos registrados · ${onlineCount} online`} />
+      <Topbar 
+        title="Dispositivos" 
+        subtitle={loading 
+          ? 'Cargando dispositivos...' 
+          : selectedClient === 'all' 
+            ? `${devices.length} dispositivos registrados · ${onlineCount} online`
+            : `${devices.length} dispositivos · ${allClients.find(c => c.id === selectedClient)?.name}`
+        } 
+      />
 
       <div style={{ padding: '28px 32px' }}>
+
+        {/* Filtro por Cliente */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Building size={16} color="var(--text-secondary)" />
+            <select 
+              value={selectedClient} 
+              onChange={(e) => setSelectedClient(e.target.value)}
+              style={{
+                padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
+                background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)',
+                fontSize: '13px', cursor: 'pointer'
+              }}
+            >
+              <option value="all">Todos los Clientes</option>
+              {allClients.map(client => (
+                <option key={client.id} value={client.id}>{client.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            {selectedClient === 'all' 
+              ? `${allClients.length} clientes` 
+              : allClients.find(c => c.id === selectedClient)?.name
+            }
+          </div>
+        </div>
 
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -114,8 +183,8 @@ export default function DevicesPage() {
             <button className="btn-secondary">
               <Download size={15} /> Exportar
             </button>
-            <button className="btn-primary">
-              <Plus size={15} /> Agregar Dispositivo
+            <button className="btn-primary" onClick={createTestDevice}>
+              <Plus size={15} /> Agregar Dispositivo Demo
             </button>
           </div>
         </div>
@@ -175,7 +244,29 @@ export default function DevicesPage() {
                         </span>
                       </span>
                     </td>
-                    <td><span className="badge badge-blue">{device.layout}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="badge badge-blue">{device.layout}</span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Opciones de layouts disponibles
+                            const layouts = ['Full Screen', '2-Split', '4 Zonas', 'L-Shape', 'Main + Ticker'];
+                            const currentIndex = layouts.indexOf(device.layout);
+                            const nextLayout = layouts[(currentIndex + 1) % layouts.length];
+                            changeDeviceLayout(device.id, nextLayout);
+                          }}
+                          title="Cambiar layout"
+                          style={{
+                            width: '24px', height: '24px', borderRadius: '6px',
+                            background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                          }}
+                        >
+                          <Layout size={12} color="#60a5fa" />
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div className="progress-bar" style={{ width: '60px' }}>
