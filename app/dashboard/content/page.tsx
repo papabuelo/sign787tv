@@ -89,7 +89,7 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         if (!res.ok) throw new Error('Failed to get upload URL');
         const { presignedUrl, key, publicUrl, type, size, userId, clientId } = await res.json();
 
-        // 2. Upload directly to R2 using presigned URL (no proxy, no bandwidth cost on server)
+        // 2. Upload directly to R2 using presigned URL
         const xhr = new XMLHttpRequest();
         await new Promise<void>((resolve, reject) => {
           xhr.upload.onprogress = (e) => {
@@ -105,22 +105,9 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
           xhr.send(files[i].file);
         });
 
-        // 3. Save metadata to Supabase AFTER successful upload
-        const supabase = createClient();
-        const { data: content, error } = await supabase.from('content').insert({
-          name: files[i].file.name,
-          type,
-          r2_key: key,
-          r2_url: publicUrl,
-          size_bytes: size ?? 0,
-          client_id: clientId,
-          created_by: userId,
-        }).select().single();
-
-        if (error) throw new Error(`Supabase error: ${error.message}`);
-
+        // 3. Mark as done immediately since we bypass Supabase
         setFiles(prev => prev.map((f, idx) =>
-          idx === i ? { ...f, status: 'done', progress: 100, contentId: content.id } : f
+          idx === i ? { ...f, status: 'done', progress: 100, contentId: key } : f
         ));
       } catch (err: any) {
         setFiles(prev => prev.map((f, idx) =>
@@ -297,12 +284,19 @@ export default function ContentPage() {
 
   async function loadContent() {
     setLoading(true);
-    const { data } = await supabase
-      .from('content')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setItems(data ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/content');
+      const json = await res.json();
+      
+      if (!res.ok) throw new Error(json.error || 'Error cargando contenido');
+      
+      setItems(json.data ?? []);
+    } catch (error: any) {
+      console.error('Error cargando contenido de R2:', error);
+      alert(`Error al cargar desde R2: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Load on mount
