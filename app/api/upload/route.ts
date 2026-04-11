@@ -11,15 +11,17 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { filename, contentType, size, clientId } = await req.json()
+  const { filename, contentType, size, clientId, deviceId } = await req.json()
 
   if (!filename || !contentType) {
     return NextResponse.json({ error: 'Missing filename or contentType' }, { status: 400 })
   }
 
-  // Build a safe unique key: folder/uuid-originalname
+  // Build a safe unique key: dispositivos/deviceId/uuid-originalname or uploads/uuid-originalname
   const ext = filename.split('.').pop()
-  const key = `uploads/${uuidv4()}.${ext}`
+  const key = deviceId 
+    ? `dispositivos/${deviceId}/${uuidv4()}.${ext}`
+    : `uploads/${uuidv4()}.${ext}`
 
   // Generate presigned PUT URL (expires in 10 minutes)
   const command = new PutObjectCommand({

@@ -7,9 +7,9 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-type DeviceStatus = 'online' | 'offline' | 'warning';
+export type DeviceStatus = 'online' | 'offline' | 'warning';
 
-interface Device {
+export interface Device {
   id: string;
   name: string;
   client: string;
@@ -23,7 +23,7 @@ interface Device {
   version: string;
 }
 
-const allDevices: Device[] = [
+export const allDevices: Device[] = [
   { id: 'FS-001', name: 'TV-Entrada-Principal', client: 'Burger King Bayamón', location: 'Bayamón, PR', status: 'online', layout: 'Full Screen', uptime: '99.2%', lastSeen: 'Ahora', ip: '192.168.1.101', storage: 72, version: '2.4.1' },
   { id: 'FS-002', name: 'TV-Caja-Registradora', client: 'Subway Plaza', location: 'Hato Rey, PR', status: 'online', layout: '4 Zonas', uptime: '97.8%', lastSeen: 'hace 1 min', ip: '10.0.0.45', storage: 48, version: '2.4.1' },
   { id: 'FS-003', name: 'TV-Sala-Espera', client: 'Clínica Médica Norte', location: 'Arecibo, PR', status: 'offline', layout: '3 Paneles', uptime: '81.0%', lastSeen: 'hace 3h', ip: '—', storage: 91, version: '2.3.8' },

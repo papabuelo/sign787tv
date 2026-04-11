@@ -3,6 +3,7 @@
 import Topbar from '@/components/Topbar';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { allDevices } from '../devices/page';
 import {
   Upload, Image, Video, Globe, Database, Search,
   Filter, MoreVertical, X, CheckCircle2, Loader2,
@@ -13,6 +14,7 @@ import {
 interface ContentItem {
   id: string;
   name: string;
+  folder?: string;
   type: 'video' | 'image' | 'webpage' | 'data_widget';
   r2_url: string | null;
   size_bytes: number;
@@ -52,6 +54,7 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
   const [webUrl, setWebUrl] = useState('');
   const [webName, setWebName] = useState('');
   const [tab, setTab] = useState<'file' | 'web'>('file');
+  const [selectedDevice, setSelectedDevice] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const addFiles = (newFiles: FileList | null) => {
@@ -83,6 +86,7 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
             filename: files[i].file.name,
             contentType: files[i].file.type,
             size: files[i].file.size,
+            deviceId: selectedDevice || undefined
           }),
         });
 
@@ -161,6 +165,24 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
               boxShadow: tab === t.key ? '0 0 0 1px rgba(59,130,246,0.3)' : 'none',
             }}>{t.label}</button>
           ))}
+        </div>
+
+        {/* Device Selection */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+            Carpeta de Destino (Dispositivo)
+          </label>
+          <select 
+            className="input-field" 
+            value={selectedDevice} 
+            onChange={(e) => setSelectedDevice(e.target.value)}
+            style={{ width: '100%', appearance: 'auto' }}
+          >
+            <option value="">Carpeta General (uploads/)</option>
+            {allDevices.map(d => (
+              <option key={d.id} value={d.id}>{d.name} ({d.location})</option>
+            ))}
+          </select>
         </div>
 
         {tab === 'file' && (
@@ -279,13 +301,17 @@ export default function ContentPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [folderFilter, setFolderFilter] = useState<string>('all');
 
   const supabase = createClient();
 
   async function loadContent() {
     setLoading(true);
     try {
-      const res = await fetch('/api/content');
+      const url = folderFilter === 'all' 
+        ? '/api/content' 
+        : `/api/content?deviceId=${folderFilter === 'general' ? '' : folderFilter}`;
+      const res = await fetch(url);
       const json = await res.json();
       
       if (!res.ok) throw new Error(json.error || 'Error cargando contenido');
@@ -299,8 +325,8 @@ export default function ContentPage() {
     }
   }
 
-  // Load on mount
-  useEffect(() => { loadContent(); }, []);
+  // Load on mount and when folderFilter changes
+  useEffect(() => { loadContent(); }, [folderFilter]);
 
   const filtered = items.filter(i => {
     const matchType = filterType === 'all' || i.type === filterType;
@@ -358,6 +384,20 @@ export default function ContentPage() {
               <input placeholder="Buscar contenido..." className="input-field"
                 style={{ paddingLeft: '34px', width: '240px' }} value={search} onChange={e => setSearch(e.target.value)} />
             </div>
+
+            <select 
+              className="input-field"
+              value={folderFilter}
+              onChange={(e) => setFolderFilter(e.target.value)}
+              style={{ appearance: 'auto', padding: '6px 12px', height: '34px', fontSize: '12px', minWidth: '150px' }}
+            >
+              <option value="all">Todas las carpetas</option>
+              <option value="general">Carpeta General</option>
+              {allDevices.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+
             <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border)' }}>
               {[
                 { key: 'all', label: 'Todos' }, { key: 'video', label: 'Videos' },
@@ -427,6 +467,11 @@ export default function ContentPage() {
                     <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                       <span className="badge" style={typeBadgeStyle[item.type]}>{item.type}</span>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{formatBytes(item.size_bytes)}</span>
+                      {item.folder && item.folder !== 'uploads' && (
+                        <span style={{ fontSize: '11px', color: '#60a5fa', border: '1px solid #3b82f640', padding: '2px 6px', borderRadius: '4px' }}>
+                          {item.folder.replace('dispositivos/', '')}
+                        </span>
+                      )}
                     </div>
                     <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
                       {new Date(item.created_at).toLocaleDateString('es-PR', { month: 'short', day: 'numeric', year: 'numeric' })}
