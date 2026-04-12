@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, Pause, Square, RotateCcw, Maximize2, Settings, Monitor, ListVideo, Eye, Download, Share2, Power, Volume2, Settings as SettingsIcon, Home, Back } from 'lucide-react';
-import { allClients } from '@/types';
+import { Play, Pause, Square, RotateCcw, Maximize2, Settings, Monitor, ListVideo, Eye, Download, Share2, Power, Volume2, Settings as SettingsIcon, Home, ArrowLeft } from 'lucide-react';
+import { allDevices } from '@/types';
 import type { Device, Playlist } from '@/types';
 import { useSearchParams } from 'next/navigation';
 
@@ -189,7 +189,7 @@ function SamsungTVFrame({ children, isOn, onPowerToggle }: { children: React.Rea
                 <Home className="w-5 h-5" />
               </button>
               <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-full text-gray-300 shadow-md">
-                <Back className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -328,9 +328,7 @@ export default function PreviewPage() {
   const [showGrid, setShowGrid] = useState(false);
   const [isTVOn, setIsTVOn] = useState(true);
 
-  const currentDevice = allClients
-    .flatMap(client => client.devices)
-    .find(device => device.id === deviceId);
+  const currentDevice = allDevices.find(device => device.id === deviceId);
 
   const currentLayout = layouts[selectedLayout as keyof typeof layouts];
 
@@ -528,7 +526,7 @@ export default function PreviewPage() {
               <div 
                 className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100"
                 style={{ 
-                  width: `${((currentTime * playbackSpeed) % content.reduce((sum, item) => sum + item.duration, 0)) / content.reduce((sum, item) => sum + item.duration, 0) * 100}%` 
+                  width: `${((currentTime * playbackSpeed) % sampleContent.reduce((sum, item) => sum + item.duration, 0)) / sampleContent.reduce((sum, item) => sum + item.duration, 0) * 100}%` 
                 }}
               />
             </div>

@@ -19,6 +19,68 @@ export interface Playlist {
 }
 
 // Clientes de prueba
+// Dispositivos de prueba
+export const allDevices: Device[] = [
+  {
+    id: 'DEVICE-001',
+    name: 'Pantalla Principal',
+    clientId: 'CLIENT-001',
+    client: 'Demo Client',
+    location: 'Lobby Principal',
+    status: 'online',
+    layout: 'Full Screen',
+    uptime: '99.9%',
+    lastSeen: '2024-03-15T10:30:00Z',
+    ip: '192.168.1.100',
+    storage: 75,
+    version: '1.0.0'
+  },
+  {
+    id: 'DEVICE-002',
+    name: 'Pantalla de Menú',
+    clientId: 'CLIENT-002',
+    client: 'Burger King Bayamón',
+    location: 'Área de Pedidos',
+    status: 'online',
+    layout: '2-Split',
+    playlistId: 'PLAYLIST-001',
+    uptime: '98.5%',
+    lastSeen: '2024-03-15T10:25:00Z',
+    ip: '192.168.1.101',
+    storage: 82,
+    version: '1.0.0'
+  },
+  {
+    id: 'DEVICE-003',
+    name: 'Pantalla Promocional',
+    clientId: 'CLIENT-002',
+    client: 'Burger King Bayamón',
+    location: 'Área de Espera',
+    status: 'warning',
+    layout: '4 Zonas',
+    uptime: '95.2%',
+    lastSeen: '2024-03-15T09:45:00Z',
+    ip: '192.168.1.102',
+    storage: 91,
+    version: '1.0.0'
+  },
+  {
+    id: 'DEVICE-004',
+    name: 'Pantalla de Entrada',
+    clientId: 'CLIENT-003',
+    client: 'Subway Plaza',
+    location: 'Entrada Principal',
+    status: 'online',
+    layout: 'Main + Ticker',
+    playlistId: 'PLAYLIST-002',
+    uptime: '99.1%',
+    lastSeen: '2024-03-15T10:28:00Z',
+    ip: '192.168.1.103',
+    storage: 67,
+    version: '1.0.0'
+  }
+];
+
 export const allClients: Client[] = [
   {
     id: 'CLIENT-001',
