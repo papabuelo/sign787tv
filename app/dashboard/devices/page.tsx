@@ -4,8 +4,9 @@ import Topbar from '@/components/Topbar';
 import {
   Monitor, Wifi, WifiOff, Plus, Filter, Download,
   MoreVertical, RefreshCw, Power, Send, Eye, MapPin, Cpu, HardDrive,
-  Layout, Settings, Building, User
+  Layout, Settings, Play, Building, User
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { allClients } from '@/types';
@@ -36,6 +37,7 @@ const statusLabels: Record<DeviceStatus, string> = {
 };
 
 export default function DevicesPage() {
+  const router = useRouter();
   const [filter, setFilter] = useState<'all' | DeviceStatus>('all');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -294,6 +296,20 @@ export default function DevicesPage() {
                           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                         }}>
                           <Send size={13} color="#60a5fa" />
+                        </button>
+                        <button 
+                          title="Ver Preview" 
+                          style={{
+                            width: '30px', height: '30px', borderRadius: '7px',
+                            background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/preview?device=${device.id}`);
+                          }}
+                        >
+                          <Play size={13} color="#4ade80" />
                         </button>
                         <button title="Ver detalles" style={{
                           width: '30px', height: '30px', borderRadius: '7px',

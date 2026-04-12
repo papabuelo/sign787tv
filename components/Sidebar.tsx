@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   LayoutDashboard, Monitor, Users, Image, ListVideo,
   LayoutTemplate, Megaphone, BarChart2, Settings, Zap,
-  ChevronDown, LogOut, Shield, User
+  ChevronDown, LogOut, Shield, User, Eye
 } from 'lucide-react';
 
 const navItems = [
@@ -16,6 +16,7 @@ const navItems = [
   { label: 'Contenido',    href: '/dashboard/content',    icon: Image },
   { label: 'Playlists',    href: '/dashboard/playlists',  icon: ListVideo },
   { label: 'Layouts',      href: '/dashboard/layouts',    icon: LayoutTemplate },
+  { label: 'Preview',      href: '/dashboard/preview',    icon: Eye },
   { label: 'Campañas',     href: '/dashboard/campaigns',  icon: Megaphone },
   { label: 'Analytics',    href: '/dashboard/analytics',  icon: BarChart2 },
 ];
