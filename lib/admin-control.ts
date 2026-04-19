@@ -322,6 +322,36 @@ export function getClientActiveContent(clientId: string): ContentItem[] {
     .filter(Boolean) as ContentItem[];
 }
 
+// Función para agregar contenido a la biblioteca del administrador
+export function addContentToLibrary(
+  title: string,
+  description: string,
+  type: 'image' | 'video' | 'text',
+  url: string,
+  size: number,
+  uploadedBy: string,
+  duration: number = 5000,
+  tags: string[] = [],
+  metadata?: ContentItem['metadata']
+): ContentItem {
+  const newContent: ContentItem = {
+    id: `CONTENT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    title,
+    description,
+    type,
+    url,
+    duration,
+    size,
+    uploadedBy,
+    uploadedAt: new Date().toISOString(),
+    tags: tags.length > 0 ? tags : ['uploaded'],
+    metadata
+  };
+  
+  adminContentLibrary.push(newContent);
+  return newContent;
+}
+
 // Función para obtener el contenido activo de un dispositivo específico
 export function getDeviceActiveContent(clientId: string, deviceId: string): ContentItem[] {
   const assignments = getDeviceAssignedContent(clientId, deviceId);

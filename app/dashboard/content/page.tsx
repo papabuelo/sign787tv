@@ -109,7 +109,31 @@ function UploadModal({ onClose, onDone, devices }: { onClose: () => void; onDone
           xhr.send(files[i].file);
         });
 
-        // 3. Mark as done immediately since we bypass Supabase
+        // 3. Register content in admin library after successful upload
+        try {
+          const registerRes = await fetch('/api/content/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: files[i].file.name,
+              description: `Archivo subido: ${files[i].file.name}`,
+              url: publicUrl,
+              type: type,
+              duration: type === 'video' ? 10000 : 5000, // 10s for video, 5s for image
+              size: files[i].file.size,
+              tags: [type, 'uploaded'],
+              adminId: 'ADMIN-001'
+            }),
+          });
+
+          if (!registerRes.ok) {
+            console.error('Failed to register content in admin library');
+          }
+        } catch (registerError) {
+          console.error('Error registering content:', registerError);
+        }
+
+        // 4. Mark as done
         setFiles(prev => prev.map((f, idx) =>
           idx === i ? { ...f, status: 'done', progress: 100, contentId: key } : f
         ));

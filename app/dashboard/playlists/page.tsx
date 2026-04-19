@@ -28,6 +28,17 @@ export default function PlaylistsPage() {
   const [selectedClient, setSelectedClient] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Función para abrir el modal y recargar contenido
+  const openCreateModal = () => {
+    setShowCreateModal(true);
+    // Recargar contenido disponible cuando se abre el modal
+    if (isAdmin) {
+      setAvailableContent(getAllAdminContent());
+    } else {
+      setAvailableContent(getAllAdminContent());
+    }
+  };
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
 
@@ -137,7 +148,7 @@ export default function PlaylistsPage() {
           {isAdmin && (
             <button 
               className="btn-primary"
-              onClick={() => setShowCreateModal(true)}
+              onClick={openCreateModal}
             >
               <Plus size={15} /> Nueva Playlist
             </button>
@@ -329,7 +340,7 @@ export default function PlaylistsPage() {
               }
             </p>
             {isAdmin && (
-              <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
+              <button className="btn-primary" onClick={openCreateModal}>
                 <Plus size={15} /> Crear Playlist
               </button>
             )}
