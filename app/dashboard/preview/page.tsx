@@ -4,43 +4,8 @@ import { useState, useEffect } from 'react';
 import { Play, Pause, Square, RotateCcw, Maximize2, Settings, Monitor, ListVideo, Eye, Download, Share2, Power, Volume2, Settings as SettingsIcon, Home, ArrowLeft } from 'lucide-react';
 import { allDevices } from '@/types';
 import { getAllLayouts, type LayoutConfig } from '@/lib/layouts';
+import { getDeviceAssignedLayout, getDeviceActiveContent, type ContentItem } from '@/lib/admin-control';
 import { useSearchParams } from 'next/navigation';
-
-// Contenido de prueba con imágenes y videos reales
-const sampleContent = [
-  {
-    id: 'CONTENT-001',
-    type: 'image',
-    url: 'https://pub-096ae7504db44ad2ab3a6358a6e180c4.r2.dev/uploads/sample-1.jpg',
-    duration: 5000,
-    name: 'Promoción Especial',
-    description: 'Oferta de hamburguesas 2x1'
-  },
-  {
-    id: 'CONTENT-002', 
-    type: 'video',
-    url: 'https://pub-096ae7504db44ad2ab3a6358a6e180c4.r2.dev/uploads/sample-video.mp4',
-    duration: 10000,
-    name: 'Video Promocional',
-    description: 'Comercial de 10 segundos'
-  },
-  {
-    id: 'CONTENT-003',
-    type: 'image', 
-    url: 'https://pub-096ae7504db44ad2ab3a6358a6e180c4.r2.dev/uploads/sample-2.jpg',
-    duration: 5000,
-    name: 'Oferta del Día',
-    description: 'Descuento especial 20%'
-  },
-  {
-    id: 'CONTENT-004',
-    type: 'image',
-    url: 'https://pub-096ae7504db44ad2ab3a6358a6e180c4.r2.dev/uploads/sample-3.jpg',
-    duration: 5000,
-    name: 'Nuevo Producto',
-    description: 'Lanzamiento especial'
-  }
-];
 
 // Samsung TV Frame Component - 50" TV with realistic proportions
 function SamsungTVFrame({ children, isOn, onPowerToggle }: { children: React.ReactNode; isOn: boolean; onPowerToggle: () => void }) {
@@ -158,9 +123,9 @@ function SamsungTVFrame({ children, isOn, onPowerToggle }: { children: React.Rea
   );
 }
 
-// Content Player Component con soporte para el nuevo sistema de layouts
+// Content Player Component con contenido administrativo
 function ContentPlayer({ content, currentTime, isPlaying, playbackSpeed, layout }: {
-  content: any[];
+  content: ContentItem[];
   currentTime: number;
   isPlaying: boolean;
   playbackSpeed: number;
@@ -240,10 +205,10 @@ function ContentPlayer({ content, currentTime, isPlaying, playbackSpeed, layout 
                 {zoneContent.type === 'image' ? (
                   <img
                     src={zoneContent.url}
-                    alt={zoneContent.name}
+                    alt={zoneContent.title}
                     className="w-full h-full object-cover"
                   />
-                ) : (
+                ) : zoneContent.type === 'video' ? (
                   <video
                     src={zoneContent.url}
                     className="w-full h-full object-cover"
@@ -251,11 +216,18 @@ function ContentPlayer({ content, currentTime, isPlaying, playbackSpeed, layout 
                     muted
                     loop
                   />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full bg-gray-800">
+                    <div className="text-center text-white">
+                      <div className="text-lg font-medium">{zoneContent.title}</div>
+                      <div className="text-sm opacity-75">{zoneContent.description}</div>
+                    </div>
+                  </div>
                 )}
                 
                 {/* Content Info Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                  <h4 className="text-white text-sm font-semibold">{zoneContent.name}</h4>
+                  <h4 className="text-white text-sm font-semibold">{zoneContent.title}</h4>
                   <p className="text-gray-300 text-xs">{zoneContent.description}</p>
                 </div>
 
@@ -275,12 +247,13 @@ function ContentPlayer({ content, currentTime, isPlaying, playbackSpeed, layout 
   );
 }
 
-// Main Component
+// Main Component con control administrativo
 export default function PreviewPage() {
   const searchParams = useSearchParams();
   const deviceId = searchParams.get('deviceId');
   const [availableLayouts, setAvailableLayouts] = useState<LayoutConfig[]>([]);
   const [selectedLayout, setSelectedLayout] = useState<LayoutConfig | null>(null);
+  const [deviceContent, setDeviceContent] = useState<ContentItem[]>([]);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -295,8 +268,24 @@ export default function PreviewPage() {
     // Cargar layouts disponibles
     const layouts = getAllLayouts();
     setAvailableLayouts(layouts);
-    setSelectedLayout(layouts[0] || null);
-  }, []);
+    
+    // Cargar layout asignado al dispositivo (control administrativo)
+    if (deviceId) {
+      const assignedLayout = getDeviceAssignedLayout(currentDevice?.clientId || '', deviceId);
+      if (assignedLayout) {
+        const layout = layouts.find(l => l.id === assignedLayout.layoutId);
+        if (layout) {
+          setSelectedLayout(layout);
+        }
+      }
+    }
+    
+    // Cargar contenido asignado al dispositivo (control administrativo)
+    if (deviceId && currentDevice) {
+      const content = getDeviceActiveContent(currentDevice.clientId, deviceId);
+      setDeviceContent(content);
+    }
+  }, [deviceId, currentDevice]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -352,45 +341,52 @@ export default function PreviewPage() {
             <div>
               <h1 className="text-white text-lg font-semibold">Samsung TV Preview</h1>
               <p className="text-gray-400 text-sm">
-                {currentDevice ? `${currentDevice.name} - ${selectedLayout?.name || 'Sin layout'}` : 'Demo Mode'}
+                {currentDevice ? `${currentDevice.name} - ${selectedLayout?.name || 'Sin layout asignado'}` : 'Demo Mode'}
               </p>
+              {currentDevice && (
+                <p className="text-gray-500 text-xs">
+                  Contenido administrativo • {deviceContent.length} elementos asignados
+                </p>
+              )}
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* Layout Selector with new system */}
+            {/* Layout Selector with admin control */}
             <div className="relative">
               <button
                 onClick={() => setShowLayoutSelector(!showLayoutSelector)}
                 className="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-600 hover:border-blue-500 focus:outline-none focus:border-blue-500 flex items-center space-x-2"
               >
-                <span>{selectedLayout?.name || 'Seleccionar Layout'}</span>
+                <span>{selectedLayout?.name || 'Layout Administrativo'}</span>
                 <Settings className="w-4 h-4" />
               </button>
               
               {showLayoutSelector && (
                 <div className="absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50">
                   <div className="p-4">
-                    <h3 className="text-white font-medium mb-3">Seleccionar Layout</h3>
+                    <h3 className="text-white font-medium mb-3">Layout Asignado</h3>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {availableLayouts.map(layout => (
-                        <button
-                          key={layout.id}
-                          onClick={() => handleLayoutChange(layout)}
-                          className={`w-full text-left p-3 rounded-lg transition-colors ${
-                            selectedLayout?.id === layout.id
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          }`}
-                        >
-                          <div className="font-medium">{layout.name}</div>
-                          <div className="text-sm opacity-75">{layout.description}</div>
+                      {selectedLayout ? (
+                        <div className="bg-blue-600 text-white p-3 rounded-lg">
+                          <div className="font-medium">{selectedLayout.name}</div>
+                          <div className="text-sm opacity-75">{selectedLayout.description}</div>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs">{layout.zones.length} zonas</span>
-                            <span className="text-xs px-2 py-1 bg-gray-600 rounded">{layout.category}</span>
+                            <span className="text-xs">{selectedLayout.zones.length} zonas</span>
+                            <span className="text-xs px-2 py-1 bg-blue-500 rounded">Asignado</span>
                           </div>
-                        </button>
-                      ))}
+                        </div>
+                      ) : (
+                        <div className="bg-gray-700 text-gray-300 p-3 rounded-lg text-center">
+                          <div className="text-sm">Sin layout asignado</div>
+                          <div className="text-xs opacity-75">Contacta al administrador</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-600">
+                      <p className="text-gray-400 text-xs">
+                        Los layouts son asignados por el administrador. Los clientes no pueden cambiarlos.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -459,10 +455,10 @@ export default function PreviewPage() {
       <div className="pt-32">
         <SamsungTVFrame isOn={isTVOn} onPowerToggle={toggleTVPower}>
           <div className="relative w-full h-full bg-black">
-            {isTVOn && selectedLayout ? (
+            {isTVOn && selectedLayout && deviceContent.length > 0 ? (
               <>
                 <ContentPlayer
-                  content={sampleContent}
+                  content={deviceContent}
                   currentTime={currentTime}
                   isPlaying={isPlaying}
                   playbackSpeed={playbackSpeed}
@@ -496,9 +492,25 @@ export default function PreviewPage() {
             ) : (
               <div className="flex items-center justify-center w-full h-full bg-black">
                 <div className="text-center text-gray-500">
-                  <Power className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">TV Apagado</p>
-                  <p className="text-sm">Presiona el botón de encendido</p>
+                  {isTVOn && !selectedLayout ? (
+                    <>
+                      <Settings className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg">Sin layout asignado</p>
+                      <p className="text-sm">Contacta al administrador</p>
+                    </>
+                  ) : isTVOn && deviceContent.length === 0 ? (
+                    <>
+                      <Image className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg">Sin contenido asignado</p>
+                      <p className="text-sm">El administrador aún no ha asignado contenido</p>
+                    </>
+                  ) : (
+                    <>
+                      <Power className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg">TV Apagado</p>
+                      <p className="text-sm">Presiona el botón de encendido</p>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -510,25 +522,32 @@ export default function PreviewPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-gray-700 p-4">
         <div className="flex items-center justify-between text-white text-sm">
           <div className="flex items-center space-x-4">
-            <span>Layout: <span className="text-blue-400">{selectedLayout?.name || 'Ninguno'}</span></span>
+            <span>Layout: <span className="text-blue-400">{selectedLayout?.name || 'Sin asignar'}</span></span>
             <span>Estado: <span className={isPlaying ? 'text-green-400' : 'text-red-400'}>
               {isPlaying ? 'Reproduciendo' : 'Pausado'}
             </span></span>
             <span>Velocidad: <span className="text-yellow-400">{playbackSpeed}x</span></span>
+            {currentDevice && (
+              <span className="text-gray-400">
+                Contenido: <span className="text-blue-400">{deviceContent.length} elementos</span>
+              </span>
+            )}
           </div>
           
           <div className="flex items-center space-x-4">
             <span className="text-gray-400">
               Tiempo: {Math.floor(currentTime / 1000)}s
             </span>
-            <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100"
-                style={{ 
-                  width: `${((currentTime * playbackSpeed) % sampleContent.reduce((sum, item) => sum + item.duration, 0)) / sampleContent.reduce((sum, item) => sum + item.duration, 0) * 100}%` 
-                }}
-              />
-            </div>
+            {deviceContent.length > 0 && (
+              <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100"
+                  style={{ 
+                    width: `${((currentTime * playbackSpeed) % deviceContent.reduce((sum, item) => sum + item.duration, 0)) / deviceContent.reduce((sum, item) => sum + item.duration, 0) * 100}%` 
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

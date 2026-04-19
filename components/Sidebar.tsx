@@ -6,11 +6,19 @@ import { createClient } from '@/lib/supabase/client';
 import {
   LayoutDashboard, Monitor, Users, Image, ListVideo,
   LayoutTemplate, Megaphone, BarChart2, Settings, Zap,
-  ChevronDown, LogOut, Shield, User, Eye
+  ChevronDown, LogOut, Shield, User, Eye, Crown, Building
 } from 'lucide-react';
 
-const navItems = [
+// Navegación base - disponible para todos
+const baseNavItems = [
   { label: 'Dashboard',    href: '/dashboard',            icon: LayoutDashboard },
+  { label: 'Preview',      href: '/dashboard/preview',    icon: Eye },
+];
+
+// Navegación de administrador
+const adminNavItems = [
+  { label: 'Dashboard',    href: '/dashboard',            icon: LayoutDashboard },
+  { label: 'Admin',        href: '/dashboard/admin',      icon: Crown },
   { label: 'Dispositivos', href: '/dashboard/devices',    icon: Monitor },
   { label: 'Clientes',     href: '/dashboard/clients',    icon: Users },
   { label: 'Contenido',    href: '/dashboard/content',    icon: Image },
@@ -19,6 +27,16 @@ const navItems = [
   { label: 'Preview',      href: '/dashboard/preview',    icon: Eye },
   { label: 'Campañas',     href: '/dashboard/campaigns',  icon: Megaphone },
   { label: 'Analytics',    href: '/dashboard/analytics',  icon: BarChart2 },
+];
+
+// Navegación de cliente
+const clientNavItems = [
+  { label: 'Dashboard',    href: '/dashboard',            icon: LayoutDashboard },
+  { label: 'Mi Cuenta',    href: '/dashboard/client',    icon: Building },
+  { label: 'Dispositivos', href: '/dashboard/devices',    icon: Monitor },
+  { label: 'Contenido',    href: '/dashboard/content',    icon: Image },
+  { label: 'Playlists',    href: '/dashboard/playlists',  icon: ListVideo },
+  { label: 'Preview',      href: '/dashboard/preview',    icon: Eye },
 ];
 
 const roleLabel: Record<string, string> = {
@@ -39,9 +57,23 @@ interface SidebarProps {
   userRole?: string;
 }
 
-export default function Sidebar({ userEmail = '', userName = 'Admin', userRole = 'client' }: SidebarProps) {
+export default function Sidebar({ userEmail = '', userName = 'Admin', userRole = 'super_admin' }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Determinar qué items de navegación mostrar según el rol
+  const getNavItems = () => {
+    switch (userRole) {
+      case 'super_admin':
+        return adminNavItems;
+      case 'client':
+        return clientNavItems;
+      default:
+        return baseNavItems;
+    }
+  };
+
+  const navItems = getNavItems();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -50,97 +82,72 @@ export default function Sidebar({ userEmail = '', userName = 'Admin', userRole =
     router.refresh();
   }
 
-  const initials = userName
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || 'AD';
-
   return (
-    <aside className="sidebar">
+    <div className="bg-gray-900 text-white w-64 min-h-screen flex flex-col border-r border-gray-800">
       {/* Logo */}
-      <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 15px rgba(59,130,246,0.4)'
-          }}>
-            <Zap size={18} color="white" fill="white" />
+      <div className="p-6 border-b border-gray-800">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Zap className="w-6 h-6" />
           </div>
           <div>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '17px', lineHeight: 1 }}>
-              SIGN<span style={{ color: '#3b82f6' }}>787</span>
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Digital Signage CRM</div>
+            <h1 className="text-xl font-bold">SIGN787</h1>
+            <p className="text-xs text-gray-400">Digital Signage CRM</p>
           </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
-        <div style={{ padding: '4px 16px 8px', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          Principal
-        </div>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-          return (
-            <Link key={item.href} href={item.href} className={`sidebar-nav-item ${isActive ? 'active' : ''}`}>
-              <Icon size={17} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+      {/* Navigation */}
+      <nav className="flex-1 p-4">
+        <ul className="space-y-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
-      {/* Bottom */}
-      <div style={{ borderTop: '1px solid var(--border)', padding: '12px 0' }}>
-        <Link href="/dashboard/settings" className={`sidebar-nav-item ${pathname === '/dashboard/settings' ? 'active' : ''}`}>
-          <Settings size={17} />
-          <span>Configuración</span>
-        </Link>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="sidebar-nav-item"
-          style={{ width: 'calc(100% - 16px)', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-secondary)' }}
-        >
-          <LogOut size={17} />
-          <span>Cerrar Sesión</span>
-        </button>
-
-        {/* User card */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          margin: '8px 8px 0', padding: '10px 12px', borderRadius: '10px',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid var(--border)'
-        }}>
-          <div style={{
-            width: '30px', height: '30px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '11px', fontWeight: 700, color: 'white', flexShrink: 0
-          }}>
-            {initials}
+      {/* User Profile & Logout */}
+      <div className="p-4 border-t border-gray-800">
+        <div className="flex items-center space-x-3 mb-4">
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+            style={{ backgroundColor: roleColors[userRole as keyof typeof roleColors] || '#6b7280' }}
+          >
+            {userName.charAt(0).toUpperCase()}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {userName}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
-              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: roleColors[userRole] ?? '#64748b', display: 'inline-block' }} />
-              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                {roleLabel[userRole] ?? userRole}
-              </span>
-            </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{userName}</p>
+            <p className="text-xs text-gray-400">
+              {roleLabel[userRole as keyof typeof roleLabel] || 'Usuario'}
+            </p>
           </div>
         </div>
+        
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Cerrar Sesión</span>
+        </button>
       </div>
-    </aside>
+    </div>
   );
 }
