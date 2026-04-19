@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Play, Pause, Square, RotateCcw, Maximize2, Settings, Monitor, ListVideo, Eye, Download, Share2, Power, Volume2, Settings as SettingsIcon, Home, ArrowLeft } from 'lucide-react';
 import { allDevices } from '@/types';
-import type { Device, Playlist } from '@/types';
+import { getAllLayouts, type LayoutConfig } from '@/lib/layouts';
 import { useSearchParams } from 'next/navigation';
 
 // Contenido de prueba con imágenes y videos reales
@@ -41,47 +41,6 @@ const sampleContent = [
     description: 'Lanzamiento especial'
   }
 ];
-
-// Layouts disponibles con descripciones
-const layouts = {
-  'Full Screen': {
-    zones: [
-      { id: 'main', x: 0, y: 0, w: 100, h: 100, color: '#3b82f6', label: 'Contenido Principal' }
-    ],
-    description: 'Pantalla completa sin divisiones'
-  },
-  '2-Split': {
-    zones: [
-      { id: 'left', x: 0, y: 0, w: 50, h: 100, color: '#3b82f6', label: 'Zona Izquierda' },
-      { id: 'right', x: 50, y: 0, w: 50, h: 100, color: '#10b981', label: 'Zona Derecha' }
-    ],
-    description: 'Pantalla dividida verticalmente'
-  },
-  '4 Zonas': {
-    zones: [
-      { id: 'top-left', x: 0, y: 0, w: 50, h: 50, color: '#3b82f6', label: 'Arriba Izq' },
-      { id: 'top-right', x: 50, y: 0, w: 50, h: 50, color: '#10b981', label: 'Arriba Der' },
-      { id: 'bottom-left', x: 0, y: 50, w: 50, h: 50, color: '#f59e0b', label: 'Abajo Izq' },
-      { id: 'bottom-right', x: 50, y: 50, w: 50, h: 50, color: '#ef4444', label: 'Abajo Der' }
-    ],
-    description: 'Cuatro zonas iguales'
-  },
-  'L-Shape': {
-    zones: [
-      { id: 'main', x: 0, y: 0, w: 70, h: 70, color: '#3b82f6', label: 'Principal' },
-      { id: 'side-top', x: 70, y: 0, w: 30, h: 35, color: '#10b981', label: 'Lateral Arriba' },
-      { id: 'side-bottom', x: 70, y: 35, w: 30, h: 35, color: '#f59e0b', label: 'Lateral Abajo' }
-    ],
-    description: 'Forma de L con zona principal'
-  },
-  'Main + Ticker': {
-    zones: [
-      { id: 'main', x: 0, y: 0, w: 100, h: 80, color: '#3b82f6', label: 'Contenido Principal' },
-      { id: 'ticker', x: 0, y: 80, w: 100, h: 20, color: '#10b981', label: 'Ticker/Banner' }
-    ],
-    description: 'Pantalla principal con banner inferior'
-  }
-};
 
 // Samsung TV Frame Component - 50" TV with realistic proportions
 function SamsungTVFrame({ children, isOn, onPowerToggle }: { children: React.ReactNode; isOn: boolean; onPowerToggle: () => void }) {
@@ -199,13 +158,13 @@ function SamsungTVFrame({ children, isOn, onPowerToggle }: { children: React.Rea
   );
 }
 
-// Content Player Component
+// Content Player Component con soporte para el nuevo sistema de layouts
 function ContentPlayer({ content, currentTime, isPlaying, playbackSpeed, layout }: {
   content: any[];
   currentTime: number;
   isPlaying: boolean;
   playbackSpeed: number;
-  layout: any;
+  layout: LayoutConfig;
 }) {
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [zoneTimers, setZoneTimers] = useState<{[key: string]: number}>({});
@@ -320,17 +279,24 @@ function ContentPlayer({ content, currentTime, isPlaying, playbackSpeed, layout 
 export default function PreviewPage() {
   const searchParams = useSearchParams();
   const deviceId = searchParams.get('deviceId');
-  const [selectedLayout, setSelectedLayout] = useState('Full Screen');
+  const [availableLayouts, setAvailableLayouts] = useState<LayoutConfig[]>([]);
+  const [selectedLayout, setSelectedLayout] = useState<LayoutConfig | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [isTVOn, setIsTVOn] = useState(true);
+  const [showLayoutSelector, setShowLayoutSelector] = useState(false);
 
   const currentDevice = allDevices.find(device => device.id === deviceId);
 
-  const currentLayout = layouts[selectedLayout as keyof typeof layouts];
+  useEffect(() => {
+    // Cargar layouts disponibles
+    const layouts = getAllLayouts();
+    setAvailableLayouts(layouts);
+    setSelectedLayout(layouts[0] || null);
+  }, []);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -371,6 +337,11 @@ export default function PreviewPage() {
     }
   };
 
+  const handleLayoutChange = (layout: LayoutConfig) => {
+    setSelectedLayout(layout);
+    setShowLayoutSelector(false);
+  };
+
   return (
     <div className={`min-h-screen ${isFullscreen ? 'bg-black' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'}`}>
       {/* Header Controls */}
@@ -381,22 +352,50 @@ export default function PreviewPage() {
             <div>
               <h1 className="text-white text-lg font-semibold">Samsung TV Preview</h1>
               <p className="text-gray-400 text-sm">
-                {currentDevice ? `${currentDevice.name} - ${selectedLayout}` : 'Demo Mode'}
+                {currentDevice ? `${currentDevice.name} - ${selectedLayout?.name || 'Sin layout'}` : 'Demo Mode'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* Layout Selector */}
-            <select
-              value={selectedLayout}
-              onChange={(e) => setSelectedLayout(e.target.value)}
-              className="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500"
-            >
-              {Object.keys(layouts).map(layout => (
-                <option key={layout} value={layout}>{layout}</option>
-              ))}
-            </select>
+            {/* Layout Selector with new system */}
+            <div className="relative">
+              <button
+                onClick={() => setShowLayoutSelector(!showLayoutSelector)}
+                className="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-600 hover:border-blue-500 focus:outline-none focus:border-blue-500 flex items-center space-x-2"
+              >
+                <span>{selectedLayout?.name || 'Seleccionar Layout'}</span>
+                <Settings className="w-4 h-4" />
+              </button>
+              
+              {showLayoutSelector && (
+                <div className="absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50">
+                  <div className="p-4">
+                    <h3 className="text-white font-medium mb-3">Seleccionar Layout</h3>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {availableLayouts.map(layout => (
+                        <button
+                          key={layout.id}
+                          onClick={() => handleLayoutChange(layout)}
+                          className={`w-full text-left p-3 rounded-lg transition-colors ${
+                            selectedLayout?.id === layout.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          <div className="font-medium">{layout.name}</div>
+                          <div className="text-sm opacity-75">{layout.description}</div>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs">{layout.zones.length} zonas</span>
+                            <span className="text-xs px-2 py-1 bg-gray-600 rounded">{layout.category}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Control Buttons */}
             <button
@@ -460,14 +459,14 @@ export default function PreviewPage() {
       <div className="pt-32">
         <SamsungTVFrame isOn={isTVOn} onPowerToggle={toggleTVPower}>
           <div className="relative w-full h-full bg-black">
-            {isTVOn ? (
+            {isTVOn && selectedLayout ? (
               <>
                 <ContentPlayer
                   content={sampleContent}
                   currentTime={currentTime}
                   isPlaying={isPlaying}
                   playbackSpeed={playbackSpeed}
-                  layout={currentLayout}
+                  layout={selectedLayout}
                 />
 
                 {/* Grid Overlay */}
@@ -511,7 +510,7 @@ export default function PreviewPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-gray-700 p-4">
         <div className="flex items-center justify-between text-white text-sm">
           <div className="flex items-center space-x-4">
-            <span>Layout: <span className="text-blue-400">{selectedLayout}</span></span>
+            <span>Layout: <span className="text-blue-400">{selectedLayout?.name || 'Ninguno'}</span></span>
             <span>Estado: <span className={isPlaying ? 'text-green-400' : 'text-red-400'}>
               {isPlaying ? 'Reproduciendo' : 'Pausado'}
             </span></span>
