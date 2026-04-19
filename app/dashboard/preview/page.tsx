@@ -273,7 +273,7 @@ export default function PreviewPage() {
     if (deviceId) {
       const assignedLayout = getDeviceAssignedLayout(currentDevice?.clientId || '', deviceId);
       if (assignedLayout) {
-        const layout = layouts.find(l => l.id === assignedLayout.layoutId);
+        const layout = layouts.find((l: LayoutConfig) => l.id === assignedLayout.layoutId);
         if (layout) {
           setSelectedLayout(layout);
         }
@@ -500,7 +500,11 @@ export default function PreviewPage() {
                     </>
                   ) : isTVOn && deviceContent.length === 0 ? (
                     <>
-                      <Image className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <div className="w-16 h-16 mx-auto mb-4 opacity-50 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400 text-2xl">📷</span>
+                        </div>
+                      </div>
                       <p className="text-lg">Sin contenido asignado</p>
                       <p className="text-sm">El administrador aún no ha asignado contenido</p>
                     </>

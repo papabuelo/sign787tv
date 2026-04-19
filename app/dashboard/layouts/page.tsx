@@ -69,7 +69,7 @@ export default function LayoutsManager() {
     const duplicatedLayout = createCustomLayout({
       name: `${layout.name} (Copia)`,
       description: layout.description,
-      zones: layout.zones.map(zone => ({ ...zone })),
+      zones: layout.zones.map((zone: LayoutZone) => ({ ...zone })),
       aspectRatio: layout.aspectRatio,
       tags: [...layout.tags]
     });
@@ -81,7 +81,7 @@ export default function LayoutsManager() {
     if (selectedLayout) {
       setSelectedLayout({
         ...selectedLayout,
-        zones: selectedLayout.zones.map(zone =>
+        zones: selectedLayout.zones.map((zone: LayoutZone) =>
           zone.id === zoneId ? { ...zone, [property]: value } : zone
         )
       });
@@ -115,7 +115,7 @@ export default function LayoutsManager() {
     if (selectedLayout && selectedLayout.zones.length > 1) {
       setSelectedLayout({
         ...selectedLayout,
-        zones: selectedLayout.zones.filter(zone => zone.id !== zoneId)
+        zones: selectedLayout.zones.filter((zone: LayoutZone) => zone.id !== zoneId)
       });
     }
   };
@@ -276,7 +276,7 @@ export default function LayoutsManager() {
       <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
         <h3 className="text-white font-medium mb-4">Vista Previa: {layout.name}</h3>
         <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-          {layout.zones.map((zone) => (
+          {layout.zones.map((zone: LayoutZone) => (
             <div
               key={zone.id}
               className="absolute border-2 border-white/30 rounded flex items-center justify-center text-white text-xs font-medium"
@@ -301,7 +301,7 @@ export default function LayoutsManager() {
           <p><strong>Aspecto:</strong> {layout.aspectRatio}</p>
           <p><strong>Zonas:</strong> {layout.zones.length}</p>
           <div className="flex flex-wrap gap-2 mt-2">
-            {layout.tags.map(tag => (
+            {layout.tags.map((tag: string) => (
               <span key={tag} className="px-2 py-1 bg-gray-700 text-xs rounded">
                 {tag}
               </span>
@@ -390,7 +390,7 @@ export default function LayoutsManager() {
 
                   <div className="mb-4">
                     <div className="relative bg-black rounded border border-gray-600" style={{ aspectRatio: '16/9' }}>
-                      {layout.zones.slice(0, 4).map((zone, index) => (
+                      {layout.zones.slice(0, 4).map((zone: LayoutZone, index: number) => (
                         <div
                           key={zone.id}
                           className="absolute border border-white/20 rounded"
@@ -407,7 +407,7 @@ export default function LayoutsManager() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {layout.tags.slice(0, 3).map(tag => (
+                    {layout.tags.slice(0, 3).map((tag: string) => (
                       <span key={tag} className="px-2 py-1 bg-gray-700 text-xs rounded text-gray-300">
                         {tag}
                       </span>
@@ -480,7 +480,7 @@ export default function LayoutsManager() {
                         <label className="block text-sm text-gray-400 mb-2">Categoría</label>
                         <select
                           value={selectedLayout.category}
-                          onChange={(e) => setSelectedLayout({ ...selectedLayout, category: e.target.value })}
+                          onChange={(e) => setSelectedLayout({ ...selectedLayout, category: e.target.value as LayoutConfig['category'] })}
                           className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
                         >
                           <option value="standard">Estándar</option>
@@ -519,7 +519,7 @@ export default function LayoutsManager() {
                       </button>
                     </div>
                     <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {selectedLayout.zones.map((zone) => (
+                      {selectedLayout.zones.map((zone: LayoutZone) => (
                         <ZoneEditor
                           key={zone.id}
                           zone={zone}
